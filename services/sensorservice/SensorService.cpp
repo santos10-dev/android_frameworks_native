@@ -54,6 +54,13 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#ifdef USE_LEGACY_SENSORS_FUSION
+#include "legacy/LegacyGravitySensor.h"
+#include "legacy/LegacyLinearAccelerationSensor.h"
+#include "legacy/LegacyOrientationSensor.h"
+#include "legacy/LegacyRotationVectorSensor.h"
+#endif
+
 namespace android {
 // ---------------------------------------------------------------------------
 
@@ -214,6 +221,39 @@ void SensorService::onFirstRef() {
                         (virtualSensorsNeeds & (1<<SENSOR_TYPE_GAME_ROTATION_VECTOR)) != 0;
                 registerSensor(new GameRotationVectorSensor(), !needGameRotationVector, true);
             }
+#ifdef USE_LEGACY_SENSORS_FUSION
+            else {
+                Sensor aSensor;
+
+                // Add Android virtual sensors if they're not already
+                // available in the HAL
+
+                aSensor = registerVirtualSensor( new LegacyRotationVectorSensor() );
+                if (virtualSensorsNeeds & (1<<SENSOR_TYPE_ROTATION_VECTOR)) {
+                    mUserSensorList.add(aSensor);
+                }
+
+                aSensor = registerVirtualSensor( new LegacyGravitySensor(list, count) );
+                if (virtualSensorsNeeds & (1<<SENSOR_TYPE_GRAVITY)) {
+                    mUserSensorList.add(aSensor);
+                }
+
+                aSensor = registerVirtualSensor( new LegacyLinearAccelerationSensor(list, count) );
+                if (virtualSensorsNeeds & (1<<SENSOR_TYPE_LINEAR_ACCELERATION)) {
+                    mUserSensorList.add(aSensor);
+                }
+
+                aSensor = registerVirtualSensor( new LegacyOrientationSensor() );
+                if (virtualSensorsNeeds & (1<<SENSOR_TYPE_ROTATION_VECTOR)) {
+                    // if we are doing our own rotation-vector, also add
+                    // the orientation sensor and remove the HAL provided one.
+                    if (orientationIndex != -1)
+                        mUserSensorList.replaceAt(aSensor, orientationIndex);
+                    else
+                        mUserSensorList.add(aSensor);
+                }
+            }
+#endif
 
             if (hasAccel && hasMag) {
                 bool needGeoMagRotationVector =

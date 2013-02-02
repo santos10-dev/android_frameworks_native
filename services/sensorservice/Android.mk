@@ -20,6 +20,16 @@ LOCAL_SRC_FILES:= \
     SensorServiceUtils.cpp \
 
 
+ifeq ($(BOARD_USE_LEGACY_SENSORS_FUSION),true)
+# Legacy virtual sensors used in combination from accelerometer & magnetometer.
+LOCAL_SRC_FILES += \
+	legacy/SecondOrderLowPassFilter.cpp \
+	legacy/LegacyGravitySensor.cpp \
+	legacy/LegacyLinearAccelerationSensor.cpp \
+	legacy/LegacyOrientationSensor.cpp \
+	legacy/LegacyRotationVectorSensor.cpp
+endif
+
 LOCAL_CFLAGS:= -DLOG_TAG=\"SensorService\"
 
 LOCAL_CFLAGS += -Wall -Werror -Wextra
@@ -36,6 +46,10 @@ LOCAL_SHARED_LIBRARIES := \
     libui \
     libgui \
     libcrypto
+
+ifeq ($(BOARD_USE_LEGACY_SENSORS_FUSION),true)
+    LOCAL_CFLAGS += -DUSE_LEGACY_SENSORS_FUSION
+endif
 
 LOCAL_MODULE:= libsensorservice
 
