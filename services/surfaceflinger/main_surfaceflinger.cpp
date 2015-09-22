@@ -29,6 +29,8 @@
 
 using namespace android;
 
+extern "C" void _ZN7android19MultiDisplayService11instantiateEv();
+
 int main(int, char**) {
     signal(SIGPIPE, SIG_IGN);
     // When SF is launched in its own process, limit the number of
@@ -69,6 +71,8 @@ int main(int, char**) {
     if (sched_setscheduler(0, SCHED_FIFO, &param) != 0) {
         ALOGE("Couldn't set SCHED_FIFO");
     }
+
+    _ZN7android19MultiDisplayService11instantiateEv();
 
     // run surface flinger in this thread
     flinger->run();

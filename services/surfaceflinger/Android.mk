@@ -204,7 +204,8 @@ include $(CLEAR_VARS)
 
 LOCAL_CLANG := true
 
-LOCAL_LDFLAGS := -Wl,--version-script,art/sigchainlib/version-script.txt -Wl,--export-dynamic
+LOCAL_LDFLAGS := -Wl,--version-script,art/sigchainlib/version-script.txt -Wl,--export-dynamic -L vendor/samsung/santos10-common/proprietary/vendor/lib
+LOCAL_LDLIBS := -lmultidisplay
 LOCAL_CFLAGS := -DLOG_TAG=\"SurfaceFlinger\"
 LOCAL_CPPFLAGS := -std=c++14
 
