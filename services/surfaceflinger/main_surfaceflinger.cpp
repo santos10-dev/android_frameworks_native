@@ -26,6 +26,8 @@
 
 using namespace android;
 
+extern "C" void _ZN7android19MultiDisplayService11instantiateEv();
+
 int main(int, char**) {
     // When SF is launched in its own process, limit the number of
     // binder threads to 4.
@@ -48,6 +50,8 @@ int main(int, char**) {
     // publish surface flinger
     sp<IServiceManager> sm(defaultServiceManager());
     sm->addService(String16(SurfaceFlinger::getServiceName()), flinger, false);
+
+    _ZN7android19MultiDisplayService11instantiateEv();
 
     // run in this thread
     flinger->run();
