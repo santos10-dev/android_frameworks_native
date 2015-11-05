@@ -192,3 +192,10 @@ status_t GraphicBufferMapper::unlockAsync(buffer_handle_t handle, int *fenceFd)
 
 // ---------------------------------------------------------------------------
 }; // namespace android
+
+extern "C" android::status_t _ZN7android19GraphicBufferMapper4lockEPK13native_handlejRKNS_4RectEPPv(void*, buffer_handle_t, uint32_t, const android::Rect&, void**);
+extern "C" android::status_t _ZN7android19GraphicBufferMapper4lockEPK13native_handleiRKNS_4RectEPPv(void*, buffer_handle_t, int, const android::Rect&, void**);
+extern "C" android::status_t _ZN7android19GraphicBufferMapper4lockEPK13native_handleiRKNS_4RectEPPv(void* obj, buffer_handle_t handle, int usage, const android::Rect& bounds, void** vaddr)
+{
+    return _ZN7android19GraphicBufferMapper4lockEPK13native_handlejRKNS_4RectEPPv(obj, handle, static_cast<uint32_t>(usage), bounds, vaddr);
+}
