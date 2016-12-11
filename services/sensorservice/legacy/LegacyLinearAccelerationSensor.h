@@ -32,8 +32,7 @@ namespace android {
 class SensorDevice;
 class SensorFusion;
 
-class LegacyLinearAccelerationSensor : public SensorInterface {
-    SensorDevice& mSensorDevice;
+class LegacyLinearAccelerationSensor : public VirtualSensor {
     LegacyGravitySensor mGravitySensor;
     float mData[3];
 
@@ -41,10 +40,8 @@ class LegacyLinearAccelerationSensor : public SensorInterface {
             const sensors_event_t& event);
 public:
     LegacyLinearAccelerationSensor(sensor_t const* list, size_t count);
-    virtual status_t activate(void* ident, bool enabled);
-    virtual status_t setDelay(void* ident, int handle, int64_t ns);
-    virtual Sensor getSensor() const;
-    virtual bool isVirtual() const { return true; }
+    virtual status_t activate(void* ident, bool enabled) override;
+    virtual status_t setDelay(void* ident, int handle, int64_t ns) override;
 };
 
 // ---------------------------------------------------------------------------

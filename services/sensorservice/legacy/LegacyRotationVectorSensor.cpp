@@ -33,13 +33,23 @@ static inline T clamp(T v) {
 }
 
 LegacyRotationVectorSensor::LegacyRotationVectorSensor()
-    : mSensorDevice(SensorDevice::getInstance()),
-      mSensorFusion(SensorFusion::getInstance()),
-      mALowPass(M_SQRT1_2, 1.5f),
+    : mALowPass(M_SQRT1_2, 1.5f),
       mAX(mALowPass), mAY(mALowPass), mAZ(mALowPass),
       mMLowPass(M_SQRT1_2, 1.5f),
       mMX(mMLowPass), mMY(mMLowPass), mMZ(mMLowPass)
 {
+    const sensor_t sensor = {
+        .name       = "Rotation Vector Sensor",
+        .vendor     = "AOSP",
+        .version    = 3,
+        .handle     = '_rov',
+        .type       = SENSOR_TYPE_ROTATION_VECTOR,
+        .maxRange   = 1,
+        .resolution = 1.0f / (1<<24),
+        .power      = mSensorFusion.getPowerUsage(),
+        .minDelay   = mSensorFusion.getMinDelay(),
+    };
+    mSensor = Sensor(&sensor);
 }
 
 bool LegacyRotationVectorSensor::process(sensors_event_t* outEvent,
@@ -98,7 +108,7 @@ bool LegacyRotationVectorSensor::process(sensors_event_t* outEvent,
         Az *= invA;
         const float Mx = Ay*Hz - Az*Hy;
         const float My = Az*Hx - Ax*Hz;
-        const float Mz = Ax*Hy - Ay*Hx;
+        //const float Mz = Ax*Hy - Ay*Hx;
 
         // construct real rotation matrix
         mat33_t R;
@@ -130,26 +140,11 @@ status_t LegacyRotationVectorSensor::activate(void* ident, bool enabled) {
         mMagTime = 0;
         mAccTime = 0;
     }
-    return mSensorFusion.activate(ident, enabled);
+    return mSensorFusion.activate(FUSION_NOGYRO, ident, enabled);
 }
 
-status_t LegacyRotationVectorSensor::setDelay(void* ident, int handle, int64_t ns) {
-    return mSensorFusion.setDelay(ident, ns);
-}
-
-Sensor LegacyRotationVectorSensor::getSensor() const {
-    sensor_t hwSensor;
-    hwSensor.name       = "Rotation Vector Sensor";
-    hwSensor.vendor     = "AOSP";
-    hwSensor.version    = 3;
-    hwSensor.handle     = '_rov';
-    hwSensor.type       = SENSOR_TYPE_ROTATION_VECTOR;
-    hwSensor.maxRange   = 1;
-    hwSensor.resolution = 1.0f / (1<<24);
-    hwSensor.power      = mSensorFusion.getPowerUsage();
-    hwSensor.minDelay   = mSensorFusion.getMinDelay();
-    Sensor sensor(&hwSensor);
-    return sensor;
+status_t LegacyRotationVectorSensor::setDelay(void* ident, int /*handle*/, int64_t ns) {
+    return mSensorFusion.setDelay(FUSION_NOGYRO, ident, ns);
 }
 
 // ---------------------------------------------------------------------------

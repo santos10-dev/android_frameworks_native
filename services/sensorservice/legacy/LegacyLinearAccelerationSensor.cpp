@@ -30,10 +30,23 @@ namespace android {
 // ---------------------------------------------------------------------------
 
 LegacyLinearAccelerationSensor::LegacyLinearAccelerationSensor(sensor_t const* list, size_t count)
-    : mSensorDevice(SensorDevice::getInstance()),
-      mGravitySensor(list, count)
+    : mGravitySensor(list, count)
 {
     mData[0] = mData[1] = mData[2] = 0;
+
+    const Sensor &gsensor = mGravitySensor.getSensor();
+    const sensor_t sensor = {
+        .name       = "Linear Acceleration Sensor",
+        .vendor     = "AOSP",
+        .version    = gsensor.getVersion(),
+        .handle     = '_lin',
+        .type       = SENSOR_TYPE_LINEAR_ACCELERATION,
+        .maxRange   = gsensor.getMaxValue(),
+        .resolution = gsensor.getResolution(),
+        .power      = gsensor.getPowerUsage(),
+        .minDelay   = gsensor.getMinDelay(),
+    };
+    mSensor = Sensor(&sensor);
 }
 
 bool LegacyLinearAccelerationSensor::process(sensors_event_t* outEvent,
@@ -62,22 +75,6 @@ status_t LegacyLinearAccelerationSensor::activate(void* ident, bool enabled) {
 
 status_t LegacyLinearAccelerationSensor::setDelay(void* ident, int handle, int64_t ns) {
     return mGravitySensor.setDelay(ident, handle, ns);
-}
-
-Sensor LegacyLinearAccelerationSensor::getSensor() const {
-    Sensor gsensor(mGravitySensor.getSensor());
-    sensor_t hwSensor;
-    hwSensor.name       = "Linear Acceleration Sensor";
-    hwSensor.vendor     = "AOSP";
-    hwSensor.version    = gsensor.getVersion();
-    hwSensor.handle     = '_lin';
-    hwSensor.type       = SENSOR_TYPE_LINEAR_ACCELERATION;
-    hwSensor.maxRange   = gsensor.getMaxValue();
-    hwSensor.resolution = gsensor.getResolution();
-    hwSensor.power      = gsensor.getPowerUsage();
-    hwSensor.minDelay   = gsensor.getMinDelay();
-    Sensor sensor(&hwSensor);
-    return sensor;
 }
 
 // ---------------------------------------------------------------------------

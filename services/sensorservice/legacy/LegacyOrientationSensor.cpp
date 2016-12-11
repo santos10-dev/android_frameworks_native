@@ -33,13 +33,23 @@ static inline T clamp(T v) {
 }
 
 LegacyOrientationSensor::LegacyOrientationSensor()
-    : mSensorDevice(SensorDevice::getInstance()),
-      mSensorFusion(SensorFusion::getInstance()),
-      mALowPass(M_SQRT1_2, 1.5f),
+    : mALowPass(M_SQRT1_2, 1.5f),
       mAX(mALowPass), mAY(mALowPass), mAZ(mALowPass),
       mMLowPass(M_SQRT1_2, 1.5f),
       mMX(mMLowPass), mMY(mMLowPass), mMZ(mMLowPass)
 {
+    const sensor_t sensor = {
+        .name       = "Orientation Sensor",
+        .vendor     = "AOSP",
+        .version    = 1,
+        .handle     = '_ypr',
+        .type       = SENSOR_TYPE_ORIENTATION,
+        .maxRange   = 360.0f,
+        .resolution = 1.0f/256.0f, // FIXME: real value here
+        .power      = mSensorFusion.getPowerUsage(),
+        .minDelay   = mSensorFusion.getMinDelay(),
+    };
+    mSensor = Sensor(&sensor);
 }
 
 bool LegacyOrientationSensor::process(sensors_event_t* outEvent,
@@ -98,7 +108,7 @@ bool LegacyOrientationSensor::process(sensors_event_t* outEvent,
         Az *= invA;
         const float Mx = Ay*Hz - Az*Hy;
         const float My = Az*Hx - Ax*Hz;
-        const float Mz = Ax*Hy - Ay*Hx;
+        //const float Mz = Ax*Hy - Ay*Hx;
 
         // construct real rotation matrix
         mat33_t R;
@@ -136,26 +146,11 @@ status_t LegacyOrientationSensor::activate(void* ident, bool enabled) {
         mMagTime = 0;
         mAccTime = 0;
     }
-    return mSensorFusion.activate(ident, enabled);
+    return mSensorFusion.activate(FUSION_NOGYRO, ident, enabled);
 }
 
-status_t LegacyOrientationSensor::setDelay(void* ident, int handle, int64_t ns) {
-    return mSensorFusion.setDelay(ident, ns);
-}
-
-Sensor LegacyOrientationSensor::getSensor() const {
-    sensor_t hwSensor;
-    hwSensor.name       = "Orientation Sensor";
-    hwSensor.vendor     = "AOSP";
-    hwSensor.version    = 1;
-    hwSensor.handle     = '_ypr';
-    hwSensor.type       = SENSOR_TYPE_ORIENTATION;
-    hwSensor.maxRange   = 360.0f;
-    hwSensor.resolution = 1.0f/256.0f; // FIXME: real value here
-    hwSensor.power      = mSensorFusion.getPowerUsage();
-    hwSensor.minDelay   = mSensorFusion.getMinDelay();
-    Sensor sensor(&hwSensor);
-    return sensor;
+status_t LegacyOrientationSensor::setDelay(void* ident, int /*handle*/, int64_t ns) {
+    return mSensorFusion.setDelay(FUSION_NOGYRO, ident, ns);
 }
 
 // ---------------------------------------------------------------------------

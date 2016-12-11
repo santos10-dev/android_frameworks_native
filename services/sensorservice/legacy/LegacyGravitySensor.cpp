@@ -30,9 +30,7 @@ namespace android {
 // ---------------------------------------------------------------------------
 
 LegacyGravitySensor::LegacyGravitySensor(sensor_t const* list, size_t count)
-    : mSensorDevice(SensorDevice::getInstance()),
-      mSensorFusion(SensorFusion::getInstance()),
-      mAccTime(0),
+    : mAccTime(0),
       mLowPass(M_SQRT1_2, 1.5f),
       mX(mLowPass), mY(mLowPass), mZ(mLowPass)
 {
@@ -42,6 +40,19 @@ LegacyGravitySensor::LegacyGravitySensor(sensor_t const* list, size_t count)
             break;
         }
     }
+
+    const sensor_t sensor = {
+        .name       = "Gravity Sensor",
+        .vendor     = "AOSP",
+        .version    = 3,
+        .handle     = '_grv',
+        .type       = SENSOR_TYPE_GRAVITY,
+        .maxRange   = GRAVITY_EARTH * 2,
+        .resolution = mAccelerometer.getResolution(),
+        .power      = mSensorFusion.getPowerUsage(),
+        .minDelay   = mSensorFusion.getMinDelay(),
+    };
+    mSensor = Sensor(&sensor);
 }
 
 bool LegacyGravitySensor::process(sensors_event_t* outEvent,
@@ -75,26 +86,11 @@ bool LegacyGravitySensor::process(sensors_event_t* outEvent,
 }
 
 status_t LegacyGravitySensor::activate(void* ident, bool enabled) {
-    return mSensorFusion.activate(ident, enabled);
+    return mSensorFusion.activate(FUSION_NOGYRO, ident, enabled);
 }
 
-status_t LegacyGravitySensor::setDelay(void* ident, int handle, int64_t ns) {
-    return mSensorFusion.setDelay(ident, ns);
-}
-
-Sensor LegacyGravitySensor::getSensor() const {
-    sensor_t hwSensor;
-    hwSensor.name       = "Gravity Sensor";
-    hwSensor.vendor     = "AOSP";
-    hwSensor.version    = 3;
-    hwSensor.handle     = '_grv';
-    hwSensor.type       = SENSOR_TYPE_GRAVITY;
-    hwSensor.maxRange   = GRAVITY_EARTH * 2;
-    hwSensor.resolution = mAccelerometer.getResolution();
-    hwSensor.power      = mSensorFusion.getPowerUsage();
-    hwSensor.minDelay   = mSensorFusion.getMinDelay();
-    Sensor sensor(&hwSensor);
-    return sensor;
+status_t LegacyGravitySensor::setDelay(void* ident, int /*handle*/, int64_t ns) {
+    return mSensorFusion.setDelay(FUSION_NOGYRO, ident, ns);
 }
 
 // ---------------------------------------------------------------------------
