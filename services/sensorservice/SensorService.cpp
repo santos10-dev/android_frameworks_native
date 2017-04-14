@@ -198,9 +198,10 @@ void SensorService::onFirstRef() {
                 // available in the HAL
                 bool needRotationVector =
                         (virtualSensorsNeeds & (1<<SENSOR_TYPE_ROTATION_VECTOR)) != 0;
+                bool needOrientation = !needRotationVector && orientationIndex == -1;
 
                 registerSensor(new RotationVectorSensor(), !needRotationVector, true);
-                registerSensor(new OrientationSensor(), !needRotationVector, true);
+                registerSensor(new OrientationSensor(), !needOrientation, true);
 
                 bool needLinearAcceleration =
                         (virtualSensorsNeeds & (1<<SENSOR_TYPE_LINEAR_ACCELERATION)) != 0;
@@ -351,6 +352,7 @@ status_t SensorService::dump(int fd, const Vector<String16>& args) {
                 IPCThreadState::self()->getCallingPid(),
                 IPCThreadState::self()->getCallingUid());
     } else {
+        bool privileged = IPCThreadState::self()->getCallingUid() == 0;
         if (args.size() > 2) {
            return INVALID_OPERATION;
         }
@@ -422,8 +424,12 @@ status_t SensorService::dump(int fd, const Vector<String16>& args) {
             result.append("Recent Sensor events:\n");
             for (auto&& i : mRecentEvent) {
                 sp<SensorInterface> s = mSensors.getInterface(i.first);
-                if (!i.second->isEmpty() &&
-                    s->getSensor().getRequiredPermission().isEmpty()) {
+                if (!i.second->isEmpty()) {
+                    if (privileged || s->getSensor().getRequiredPermission().isEmpty()) {
+                        i.second->setFormat("normal");
+                    } else {
+                        i.second->setFormat("mask_data");
+                    }
                     // if there is events and sensor does not need special permission.
                     result.appendFormat("%s: ", s->getSensor().getName().string());
                     result.append(i.second->dump().c_str());
@@ -1019,6 +1025,9 @@ void SensorService::cleanupConnection(SensorEventConnection* c) {
     if (c->needsWakeLock()) {
         checkWakeLockStateLocked();
     }
+
+    SensorDevice& dev(SensorDevice::getInstance());
+    dev.notifyConnectionDestroyed(c);
 }
 
 sp<SensorInterface> SensorService::getSensorInterfaceFromHandle(int handle) const {
