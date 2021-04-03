@@ -1915,8 +1915,8 @@ status_t Parcel::readUtf8FromUtf16(std::unique_ptr<std::string>* str) const {
 
 const char* Parcel::readCString() const
 {
-    const size_t avail = mDataSize-mDataPos;
-    if (avail > 0) {
+    if (mDataPos < mDataSize) {
+        const size_t avail = mDataSize-mDataPos;
         const char* str = reinterpret_cast<const char*>(mData+mDataPos);
         // is the string's trailing NUL within the parcel's valid bounds?
         const char* eos = reinterpret_cast<const char*>(memchr(str, 0, avail));
@@ -1994,7 +1994,10 @@ const char16_t* Parcel::readString16Inplace(size_t* outLen) const
         *outLen = size;
         const char16_t* str = (const char16_t*)readInplace((size+1)*sizeof(char16_t));
         if (str != NULL) {
-            return str;
+            if (str[size] == u'\0') {
+                return str;
+            }
+            android_errorWriteLog(0x534e4554, "172655291");
         }
     }
     *outLen = 0;
@@ -2569,10 +2572,18 @@ status_t Parcel::continueWrite(size_t desired)
                 release_object(proc, *flat, this);
 #endif
             }
-            binder_size_t* objects =
-                (binder_size_t*)realloc(mObjects, objectsSize*sizeof(binder_size_t));
-            if (objects) {
-                mObjects = objects;
+
+            if (objectsSize == 0) {
+                free(mObjects);
+                mObjects = nullptr;
+                mObjectsCapacity = 0;
+            } else {
+                binder_size_t* objects =
+                    (binder_size_t*)realloc(mObjects, objectsSize*sizeof(binder_size_t));
+                if (objects) {
+                    mObjects = objects;
+                    mObjectsCapacity = objectsSize;
+                }
             }
             mObjectsSize = objectsSize;
             mNextObjectHint = 0;
